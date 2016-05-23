@@ -51,6 +51,7 @@ class QxtGlobalShortcut;
 class QModelIndex;
 class QSystemTrayIcon;
 class QTabBar;
+class QTimer;
 
 namespace Ui {
 class MainWindow;
@@ -93,6 +94,7 @@ private slots:
     void openDocset(const QModelIndex &index);
     void queryCompleted();
     void closeTab(int index = -1);
+	void delayQuery();
 
 private:
     void displayViewActions();
@@ -128,6 +130,7 @@ private:
     QTabBar *m_tabBar = nullptr;
 
     QSystemTrayIcon *m_trayIcon = nullptr;
+	QTimer *m_timer = nullptr;
 
 #ifdef USE_APPINDICATOR
     bool m_useAppIndicator = false;

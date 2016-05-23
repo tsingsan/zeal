@@ -42,6 +42,7 @@
 #include <QShortcut>
 #include <QSystemTrayIcon>
 #include <QTabBar>
+#include <QTimer>
 
 #ifdef USE_WEBENGINE
 #include <QWebEngineHistory>
@@ -134,6 +135,21 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent) :
     m_globalShortcut(new QxtGlobalShortcut(m_settings->showShortcut, this))
 {
     ui->setupUi(this);
+
+	m_timer = new QTimer();
+	m_timer->setInterval(250);
+	connect(m_timer, &QTimer::timeout, [this]() {
+		QString& text = ui->lineEdit->text();
+		if (text == currentTabState()->searchQuery)
+			return;
+
+		currentTabState()->searchQuery = text;
+		m_application->docsetRegistry()->search(text);
+		if (text.isEmpty()) {
+			currentTabState()->tocModel->setResults();
+			displayTreeView();
+		}
+	});
 
     connect(m_settings, &Core::Settings::updated, this, &MainWindow::applySettings);
 
@@ -312,17 +328,7 @@ MainWindow::MainWindow(Core::Application *app, QWidget *parent) :
         setupSearchBoxCompletions();
     });
 
-    connect(ui->lineEdit, &QLineEdit::textChanged, [this](const QString &text) {
-        if (text == currentTabState()->searchQuery)
-            return;
-
-        currentTabState()->searchQuery = text;
-        m_application->docsetRegistry()->search(text);
-        if (text.isEmpty()) {
-            currentTabState()->tocModel->setResults();
-            displayTreeView();
-        }
-    });
+    connect(ui->lineEdit, &QLineEdit::textChanged, this, &MainWindow::delayQuery);
 
     ui->actionNewTab->setShortcut(QKeySequence::AddTab);
     connect(ui->actionNewTab, &QAction::triggered, this, [this]() { createTab(); });
@@ -466,6 +472,11 @@ void MainWindow::createTab(int index)
     m_tabStates.insert(index, newTab);
     m_tabBar->insertTab(index, tr("Loading..."));
     m_tabBar->setCurrentIndex(index);
+}
+
+void MainWindow::delayQuery()
+{
+	m_timer->start();
 }
 
 void MainWindow::displayTreeView()
